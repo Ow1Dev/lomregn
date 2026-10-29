@@ -21,6 +21,10 @@ impl Iterator for Lexer {
     type Item = Kind;
 
     fn next(&mut self) -> Option<Kind> {
+        if self.source.is_empty() {
+            return None;
+        }
+
         let mut val = Vec::new();
         while let Some(v) = self.source.pop_front() {
             if v.is_whitespace() {
@@ -31,10 +35,6 @@ impl Iterator for Lexer {
             }
 
             val.push(v)
-        }
-
-        if val.is_empty() {
-            return None;
         }
 
         if val.iter().all(|c| c.is_digit(10)) {
@@ -52,7 +52,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn lexes_integer_literals() {
+    fn lexer_if_empty_return_none() {
+        let mut lexer = self::new("");
+        assert_eq!(lexer.next(), None);
+    }
+
+    #[test]
+    fn lexer_integer_literals() {
         let cases = [
             ("1", Kind::Number(1)),
             ("16", Kind::Number(16)),
@@ -66,7 +72,7 @@ mod tests {
     }
 
     #[test]
-    fn ignores_whitespace() {
+    fn lexer_ignores_whitespace() {
         let cases = [
             ("  16", Kind::Number(16)),
             ("42  ", Kind::Number(42)),
@@ -79,7 +85,7 @@ mod tests {
         }
     }
     #[test]
-    fn lexes_multiple_integer_literals() {
+    fn lexer_multiple_integer_literals() {
         let mut lexer = self::new("42  5");
         assert_eq!(lexer.next(), Some(Kind::Number(42)));
         assert_eq!(lexer.next(), Some(Kind::Number(5)));
