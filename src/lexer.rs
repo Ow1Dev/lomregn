@@ -1,4 +1,4 @@
-use std::{iter::Peekable, str::Chars};
+use std::{fmt::Display, iter::Peekable, str::Chars};
 
 #[derive(Debug, PartialEq)]
 pub enum Kind {
@@ -8,6 +8,19 @@ pub enum Kind {
     Slash,
     Star,
     Unknown,
+}
+
+impl Display for Kind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Number(v) => write!(f, "{}", v),
+            Self::Plus => write!(f, "+"),
+            Self::Minus => write!(f, "-"),
+            Self::Slash => write!(f, "/"),
+            Self::Star => write!(f, "*"),
+            Self::Unknown => write!(f, "Unknown"),
+        }
+    }
 }
 
 pub struct Lexer<'a> {

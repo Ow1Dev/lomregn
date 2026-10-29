@@ -1,6 +1,9 @@
 mod lexer;
 
 fn main() {
-    let _lex = lexer::new("42");
-    println!("Hello, sailor!");
+    for v in lexer::new("42 + 3 * 3 / 2") {
+        print!("{}", v);
+    }
+
+    print!("\n");
 }
