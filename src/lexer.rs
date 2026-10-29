@@ -1,49 +1,59 @@
-use std::collections::VecDeque;
+use std::{iter::Peekable, str::Chars};
 
 #[derive(Debug, PartialEq)]
 pub enum Kind {
     Number(u32),
+    Plus,
+    Minus,
+    Slash,
+    Star,
+    Unknown,
 }
 
-pub struct Lexer {
-    source: VecDeque<char>,
+pub struct Lexer<'a> {
+    source: Peekable<Chars<'a>>,
 }
 
-pub fn new(source: &str) -> Lexer {
+pub fn new(source: &str) -> Lexer<'_> {
     Lexer {
         // trim is not nessary here as my iterator does it. but i have it here for performece
         // reason.
-        source: source.trim().chars().collect(),
+        source: source.trim().chars().peekable(),
     }
 }
 
-impl Iterator for Lexer {
+impl Iterator for Lexer<'_> {
     type Item = Kind;
 
     fn next(&mut self) -> Option<Kind> {
-        if self.source.is_empty() {
-            return None;
-        }
+        let c = self.source.find(|c| !c.is_ascii_whitespace())?;
 
-        let mut val = Vec::new();
-        while let Some(v) = self.source.pop_front() {
-            if v.is_whitespace() {
-                if !val.is_empty() {
-                    break;
+        match c {
+            '+' => Some(Kind::Plus),
+            '-' => Some(Kind::Minus),
+            '/' => Some(Kind::Slash),
+            '*' => Some(Kind::Star),
+            c if c.is_ascii_digit() => {
+                let mut digit = Vec::new();
+                digit.push(c);
+
+                while let Some(v) = self.source.peek() {
+                    if !v.is_ascii_digit() {
+                        break;
+                    }
+                    digit.push(self.source.next()?)
                 }
-                continue;
+
+                Some(Kind::Number(
+                    digit
+                        .into_iter()
+                        .collect::<String>()
+                        .parse()
+                        .expect("Something ws not a digit"),
+                ))
             }
-
-            val.push(v)
+            _ => Some(Kind::Unknown),
         }
-
-        if val.iter().all(|c| c.is_digit(10)) {
-            return Some(Kind::Number(
-                val.into_iter().collect::<String>().parse().unwrap(),
-            ));
-        }
-
-        None
     }
 }
 
@@ -58,11 +68,15 @@ mod tests {
     }
 
     #[test]
-    fn lexer_integer_literals() {
+    fn lexer_kind_literals() {
         let cases = [
             ("1", Kind::Number(1)),
             ("16", Kind::Number(16)),
             ("103", Kind::Number(103)),
+            ("+", Kind::Plus),
+            ("/", Kind::Slash),
+            ("*", Kind::Star),
+            ("-", Kind::Minus),
         ];
 
         for (input, expected) in cases {
@@ -85,9 +99,10 @@ mod tests {
         }
     }
     #[test]
-    fn lexer_multiple_integer_literals() {
-        let mut lexer = self::new("42  5");
+    fn lexer_multiple_kind_literals() {
+        let mut lexer = self::new("42  + 5");
         assert_eq!(lexer.next(), Some(Kind::Number(42)));
+        assert_eq!(lexer.next(), Some(Kind::Plus));
         assert_eq!(lexer.next(), Some(Kind::Number(5)));
     }
 }
